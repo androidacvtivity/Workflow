@@ -1,0 +1,78 @@
+name: Android CI (APK build only)
+
+on:
+  push:
+  pull_request:
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  build:
+    name: Build APKs (Debug & Release)
+    runs-on: ubuntu-latest
+    timeout-minutes: 40
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Validate Gradle Wrapper
+        uses: gradle/actions/wrapper-validation@v4
+
+      - name: Set up JDK 17
+        uses: actions/setup-java@v4
+        with:
+          distribution: temurin
+          java-version: "17"
+          cache: gradle
+
+      - name: Set up Android SDK
+        uses: android-actions/setup-android@v3
+
+      - name: Install required SDK packages
+        run: |
+          yes | sdkmanager --licenses >/dev/null 2>&1 || true
+          sdkmanager "platform-tools" "platforms;android-36" "build-tools;36.0.0"
+
+      - name: Ensure local.properties
+        run: echo "sdk.dir=$ANDROID_SDK_ROOT" > local.properties
+
+      # ✅ Verificări explicite (loguri clare în Actions)
+      - name: Check local.properties & SDK dir
+        run: |
+          echo "=== local.properties content ==="
+          cat local.properties || true
+          echo "=== ANDROID_SDK_ROOT ==="
+          echo "$ANDROID_SDK_ROOT"
+          echo "=== SDK directory listing ==="
+          ls -la "$ANDROID_SDK_ROOT" || true
+          echo "=== Build-tools installed ==="
+          ls -la "$ANDROID_SDK_ROOT/build-tools" || true
+          echo "=== Platforms installed ==="
+          ls -la "$ANDROID_SDK_ROOT/platforms" || true
+
+      - name: Make gradlew executable
+        run: chmod +x ./gradlew
+
+      # ✅ Verificare indirectă: dacă acest pas merge, Gradle a găsit SDK-ul
+      - name: Gradle tasks (sanity check)
+        run: ./gradlew tasks --all
+
+      - name: Clean
+        run: ./gradlew clean
+
+      - name: Build Debug APK
+        run: ./gradlew assembleDebug
+
+      - name: Build Release APK
+        run: ./gradlew assembleRelease
+
+      - name: Upload APKs
+        uses: actions/upload-artifact@v4
+        with:
+          name: built-apks
+          path: |
+            **/build/outputs/apk/debug/*.apk
+            **/build/outputs/apk/release/*.apk
