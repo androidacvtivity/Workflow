@@ -1,0 +1,64 @@
+name: Android CI (APK build only)
+
+on:
+  push:
+  pull_request:
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    timeout-minutes: 40
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Set up JDK 17
+        uses: actions/setup-java@v4
+        with:
+          distribution: temurin
+          java-version: "17"
+          cache: gradle
+
+      - name: Set up Android SDK
+        uses: android-actions/setup-android@v3
+
+      - name: Install required SDK packages
+        run: |
+          yes | sdkmanager --licenses >/dev/null 2>&1 || true
+          sdkmanager "platform-tools" "platforms;android-36" "build-tools;36.0.0"
+          echo "sdk.dir=$ANDROID_SDK_ROOT" > local.properties
+
+      - name: Build Debug & Release APKs
+        run: ./gradlew clean assembleDebug assembleRelease
+
+      - name: Show where APKs were saved
+        run: |
+          echo "=== Searching for APKs under $GITHUB_WORKSPACE ==="
+          mapfile -t APKS < <(find "$GITHUB_WORKSPACE" -type f -name "*.apk")
+          if [ ${#APKS[@]} -eq 0 ]; then
+            echo "No APKs found. Expected under **/build/outputs/apk/**."
+            exit 1
+          fi
+
+          echo ""
+          echo "=== APK Paths (relative) ==="
+          for f in "${APKS[@]}"; do
+            rel="${f#$GITHUB_WORKSPACE/}"
+            echo "$rel"
+          done
+
+          echo ""
+          echo "=== APK Sizes ==="
+          du -h "${APKS[@]}"
+
+          echo ""
+          echo "=== Outputs directory snapshot ==="
+          # Show only the standard outputs folders if they exist
+          for d in app/build/outputs */build/outputs; do
+            [ -d "$d" ] && find "$d" -maxdepth 3 -type f -printf "%p\n"
+          done
