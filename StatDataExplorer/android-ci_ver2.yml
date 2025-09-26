@@ -70,7 +70,7 @@ jobs:
       #   if: ${{ env.SIGNING_ENABLED == 'true' }}
       #   run: ./gradlew --no-daemon assembleRelease
 
-      # ---- Upload artifacts (cu retenție mică) ----
+     # ---- Upload artifacts (cu retenție mică) ----
       # - name: Upload Debug APK
       #   uses: actions/upload-artifact@v4
       #   with:
