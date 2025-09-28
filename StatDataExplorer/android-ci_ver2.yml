@@ -71,13 +71,13 @@ jobs:
       #   run: ./gradlew --no-daemon assembleRelease
 
       #  Upload artifacts (cu retenție mică) ----
-      - name: Upload Debug APK
-        uses: actions/upload-artifact@v4
-        with:
-          name: app-debug-${{ github.run_number }}-${{ github.sha }}
-          path: app/build/outputs/apk/debug/*.apk
-          if-no-files-found: error
-          retention-days: 3
+      # - name: Upload Debug APK
+      #   uses: actions/upload-artifact@v4
+      #   with:
+      #     name: app-debug-${{ github.run_number }}-${{ github.sha }}
+      #     path: app/build/outputs/apk/debug/*.apk
+      #     if-no-files-found: error
+      #     retention-days: 3
 
       # - name: Upload Release APK (optional)
       #   if: ${{ env.SIGNING_ENABLED == 'true' }}
