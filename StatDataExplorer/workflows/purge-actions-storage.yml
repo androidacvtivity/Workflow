@@ -1,0 +1,69 @@
+name: Purge Actions Storage (Artifacts + Caches)
+
+on:
+  workflow_dispatch:
+
+permissions:
+  actions: write
+  contents: read
+
+jobs:
+  purge:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Show gh version
+        run: gh --version
+
+      - name: Delete ALL artifacts
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          set -euo pipefail
+          echo "Deleting artifacts…"
+          # Ștergem toate artifactele (paginat)
+          gh api -H "Accept: application/vnd.github+json" \
+            /repos/${{ github.repository }}/actions/artifacts --paginate \
+            -q '.artifacts[].id' | while read id; do
+              echo "Deleting artifact id=$id"
+              gh api -X DELETE /repos/${{ github.repository }}/actions/artifacts/$id >/dev/null || true
+            done
+          echo "Artifacts purge done."
+
+      - name: Delete ALL Actions caches
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          set -euo pipefail
+          echo "Listing caches…"
+          # Listăm toate cache-urile (chei + id + size)
+          gh api /repos/${{ github.repository }}/actions/caches?per_page=100 --paginate \
+            -q '.actions_caches[] | [.id, .key, .size_in_bytes] | @tsv' > caches.tsv || true
+
+          if [ ! -s caches.tsv ]; then
+            echo "No caches found."
+            exit 0
+          fi
+
+          echo "Deleting caches…"
+          while IFS=$'\t' read -r ID KEY SIZE; do
+            echo "Deleting cache id=$ID key=$KEY size=${SIZE}B"
+            # API suportă delete by id
+            gh api -X DELETE /repos/${{ github.repository }}/actions/caches/$ID >/dev/null || true
+          done < caches.tsv
+
+          echo "Caches purge done."
+
+      - name: Show remaining totals (approx)
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          set -euo pipefail
+          echo "Computing totals after purge…"
+          # Artefacte rămase
+          ART_MB=$( gh api /repos/${{ github.repository }}/actions/artifacts --paginate -q '.artifacts[].size_in_bytes' \
+            | awk '{s+=$1} END {printf("%.2f", s/1024/1024)}' )
+          # Cache rămas
+          CCH_MB=$( gh api /repos/${{ github.repository }}/actions/caches?per_page=100 --paginate -q '.actions_caches[].size_in_bytes' \
+            | awk '{s+=$1} END {printf("%.2f", s/1024/1024)}' )
+          echo "Artifacts: ${ART_MB:-0} MB"
+          echo "Caches:    ${CCH_MB:-0} MB"
