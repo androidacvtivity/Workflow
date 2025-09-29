@@ -1,0 +1,12 @@
+Sa facem mai intai o mice recapitulare.
+Eu acum in repozitoriu meu (https://github.com/androidacvtivity/StatDataExplorer) am 5 workflow - uri 
+Analizeazala te rog - si care imi trebuie si care nu 
+
+
+
+Am lasat 
+
+android-ci.yml,
+purge-actions-storage.yml,
+Cleanup_old_workflow_runs.yml 
+
