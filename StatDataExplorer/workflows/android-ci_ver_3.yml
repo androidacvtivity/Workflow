@@ -2,7 +2,7 @@ name: Android CI
 
 on:
   push:
-    branches: [ "main" ]
+    branches: [ "bancusoft" ]
   workflow_dispatch:
 
 concurrency:
@@ -70,14 +70,14 @@ jobs:
         run: ./gradlew --no-daemon testDebugUnitTest
 
       # Upload doar pe push in main (eviti quota pe PR-uri)
-      - name: Upload Debug APK
-        if: ${{ github.event_name == 'push' && github.ref == 'refs/heads/main' }}
-        uses: actions/upload-artifact@v4
-        with:
-          name: app-debug-${{ github.run_number }}
-          path: app/build/outputs/apk/debug/*.apk
-          if-no-files-found: error
-          retention-days: 3
+      # - name: Upload Debug APK
+      #   if: ${{ github.event_name == 'push' && github.ref == 'refs/heads/main' }}
+      #   uses: actions/upload-artifact@v4
+      #   with:
+      #     name: app-debug-${{ github.run_number }}
+      #     path: app/build/outputs/apk/debug/*.apk
+      #     if-no-files-found: error
+      #     retention-days: 3
 
       # Release semnat (optional – ruleaza doar daca ai secrets/keystore)
       # - name: Build Release APK
